@@ -1,0 +1,16 @@
+[options]
+mode prove
+#mode bmc
+#depth 20
+
+[engines]
+smtbmc
+
+[script]
+verific -vhdl alu.vhd
+verific -formal alu_t.sv
+prep -top alu_t
+
+[files]
+alu.vhd
+alu_t.sv
