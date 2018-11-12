@@ -1,0 +1,15 @@
+[options]
+mode prove
+multiclock on
+
+[engines]
+smtbmc
+
+[script]
+verific -vhdl counter.vhd
+verific -formal counter_t.sv
+prep -top counter_t
+
+[files]
+counter.vhd
+counter_t.sv
