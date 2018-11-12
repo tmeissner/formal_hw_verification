@@ -1,5 +1,5 @@
 module alu_t (
-    inout        Reset_n_i,
+    input        Reset_n_i,
     input        Clk_i,
     input  [1:0] Opc_i,
     input  [31:0] DinA_i,
