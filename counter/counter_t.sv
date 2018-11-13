@@ -1,7 +1,6 @@
 module counter_t (
     input         Reset_n_i,
     input         Clk_i,
-    input  [31:0] Data_i,
     output [31:0] Data_o
 );
 
