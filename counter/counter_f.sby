@@ -3,7 +3,8 @@ mode prove
 multiclock on
 
 [engines]
-smtbmc
+#smtbmc
+abc pdr
 
 [script]
 verific -vhdl counter.vhd

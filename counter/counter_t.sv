@@ -17,8 +17,11 @@ module counter_t (
 
   reg init_state = 1;
 
-  always @(*)
+  // Initial reset
+  always @(*) begin
     if (init_state) assume (!Reset_n_i);
+    if (!init_state) assume (Reset_n_i);
+  end
 
   always @(posedge Clk_i)
     init_state = 0;
@@ -32,9 +35,18 @@ module counter_t (
 */
 
 
-  // Proves fail, counterexample hasn't initial reset active
+  // Intermediate assertions
+  always @(*)
+    if (!Reset_n_i) assert (Data_o == `INIT_VALUE);
+
+
+  // Fail with unbounded prove using SMTBMC, maybe the assertions have to be more strict
+  // there have to be more restrictions.
+  // With abc pdr is can be successfully proved
   assert property (@(posedge Clk_i) Data_o >= `INIT_VALUE && Data_o <= 64);
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o < 64 |=> Data_o == $past(Data_o) + 1);
+  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o == 64 |=> $stable(Data_o));
+
 
 
 endmodule

@@ -28,7 +28,7 @@ begin
     if (Reset_n_i = '0') then
       Data_o <= std_logic_vector(to_unsigned(Init, Data_o'length));
     elsif (rising_edge(Clk_i)) then
-      if (unsigned(Data_o) <= 64) then
+      if (unsigned(Data_o) < 64) then
         Data_o <= std_logic_vector(unsigned(Data_o) + 1);
       end if;
     end if;
