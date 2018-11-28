@@ -1,10 +1,12 @@
 [options]
+depth 30
+wait on
 mode prove
 #mode bmc
-#depth 20
 
 [engines]
 smtbmc
+abc pdr
 
 [script]
 verific -vhdl alu.vhd

@@ -5,13 +5,16 @@ use ieee.numeric_std.all;
 
 
 entity alu is
+  generic (
+    Width : natural := 8
+  );
   port (
     Reset_n_i  : in  std_logic;
     Clk_i      : in  std_logic;
     Opc_i      : in  std_logic_vector(1 downto 0);
-    DinA_i     : in  std_logic_vector(31 downto 0);
-    DinB_i     : in  std_logic_vector(31 downto 0);
-    Dout_o     : out std_logic_vector(31 downto 0);
+    DinA_i     : in  std_logic_vector(Width-1 downto 0);
+    DinB_i     : in  std_logic_vector(Width-1 downto 0);
+    Dout_o     : out std_logic_vector(Width-1 downto 0);
     OverFlow_o : out std_logic
   );
 end entity alu;

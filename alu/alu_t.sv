@@ -1,12 +1,16 @@
+`define WIDTH 8
+
+
 module alu_t (
-    input         Reset_n_i,
-    input         Clk_i,
-    input  [1:0]  Opc_i,
-    input  [31:0] DinA_i,
-    input  [31:0] DinB_i,
-    output [31:0] Dout_o,
-    output       OverFlow_o
+    input               Reset_n_i,
+    input               Clk_i,
+    input  [1:0]        Opc_i,
+    input  [`WIDTH-1:0] DinA_i,
+    input  [`WIDTH-1:0] DinB_i,
+    output [`WIDTH-1:0] Dout_o,
+    output              OverFlow_o
 );
+
 
 
   `define OPC_ADD 0
@@ -15,13 +19,13 @@ module alu_t (
   `define OPC_OR  3
 
 
-  alu alu_i (
+  alu #(.Width(`WIDTH)) alu_i (
     .Reset_n_i(Reset_n_i),
     .Clk_i(Clk_i),
     .Opc_i(Opc_i),
-    .DinA_i(DinA_i),
-    .DinB_i(DinB_i),
-    .Dout_o(Dout_o),
+    .DinA_i(DinA_i[`WIDTH-1:0]),
+    .DinB_i(DinB_i[`WIDTH-1:0]),
+    .Dout_o(Dout_o[`WIDTH-1:0]),
     .OverFlow_o(OverFlow_o)
   );
 
@@ -38,20 +42,19 @@ module alu_t (
     init_state = 0;
 
 
-  bit unsigned [32:0] dina, dinb;
+  bit unsigned [`WIDTH:0] dina, dinb;
 
   assign dina = DinA_i;
   assign dinb = DinB_i;
 
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_ADD |=> Dout_o == ($past(DinA_i) + $past(DinB_i)));
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_ADD && (dina + dinb) > 2**32-1 |=> OverFlow_o);
+  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_ADD && (dina + dinb) > 2**`WIDTH-1 |=> OverFlow_o);
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_SUB |=> Dout_o == ($past(DinA_i) - $past(DinB_i)));
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_SUB && (dina - dinb) > 2**32-1 |=> OverFlow_o);
+  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_SUB && (dina - dinb) > 2**`WIDTH-1 |=> OverFlow_o);
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_AND |=> Dout_o == ($past(DinA_i) & $past(DinB_i)));
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_OR |=> Dout_o == ($past(DinA_i) | $past(DinB_i)));
 
-  always @(*)
-    if (!Reset_n_i) assert (Dout_o == 0);
+
 
   property cover_opc (opc);
     @(posedge Clk_i)
