@@ -1,7 +1,6 @@
 [options]
 mode prove
 depth 30
-multiclock on
 wait on
 
 [engines]

@@ -19,7 +19,8 @@ module counter_t (
   );
 
 
-  reg init_state = 1;
+             reg  init_state = 1;
+  (* gclk *) wire gbl_clk;
 
   // Initial reset
   always @(*) begin
@@ -30,25 +31,26 @@ module counter_t (
   always @(posedge Clk_i)
     init_state = 0;
 
+  // Generate global clock
+  global clocking
+    @(posedge gbl_clk);
+  endclocking
 
-/*
-  // Don't works with Verific at the moment
-  initial begin
-    assume (!Reset_n_i);
+  // Use global clock to constrain the DUT clock
+  always @($global_clock) begin
+    assume(Clk_i != $past(Clk_i));
   end
-*/
 
-  // Intermediate assertions
+  // Immediate assertions
   always @(*)
     if (!Reset_n_i) assert (Data_o == `INITVAL);
-
 
   // Fails with unbounded prove using SMTBMC, maybe
   // the assumptions/assertions have to be more strict.
   // With abc pdr this can be successfully proved.
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o <  `ENDVAL |=> Data_o == $past(Data_o) + 1);
   assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o == `ENDVAL |=> $stable(Data_o));
-
+  assert property (@(posedge Clk_i) Data_o >= `INITVAL && Data_o <= `ENDVAL);
 
 
 endmodule
