@@ -1,9 +1,11 @@
 [options]
 mode prove
+depth 30
 multiclock on
+wait on
 
 [engines]
-#smtbmc
+smtbmc
 abc pdr
 
 [script]

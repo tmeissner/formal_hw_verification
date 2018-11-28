@@ -6,7 +6,8 @@ use ieee.numeric_std.all;
 
 entity counter is
   generic (
-    Init : natural := 8
+    InitVal : natural := 0;
+    EndVal  : natural := 64
   );
   port (
     Reset_n_i : in  std_logic;
@@ -26,9 +27,9 @@ begin
   process (Reset_n_i, Clk_i) is
   begin
     if (Reset_n_i = '0') then
-      Data_o <= std_logic_vector(to_unsigned(Init, Data_o'length));
+      Data_o <= std_logic_vector(to_unsigned(InitVal, Data_o'length));
     elsif (rising_edge(Clk_i)) then
-      if (unsigned(Data_o) < 64) then
+      if (to_integer(unsigned(Data_o)) < EndVal) then
         Data_o <= std_logic_vector(unsigned(Data_o) + 1);
       end if;
     end if;

@@ -5,10 +5,14 @@ module counter_t (
 );
 
 
-  `define INIT_VALUE 8
+  `define INITVAL 8
+  `define ENDVAL  64
 
 
-  counter #(.Init(`INIT_VALUE)) counter_i (
+  counter #(
+    .InitVal(`INITVAL),
+    .EndVal(`ENDVAL)
+  ) counter_i (
     .Reset_n_i(Reset_n_i),
     .Clk_i(Clk_i),
     .Data_o(Data_o)
@@ -34,18 +38,16 @@ module counter_t (
   end
 */
 
-
   // Intermediate assertions
   always @(*)
-    if (!Reset_n_i) assert (Data_o == `INIT_VALUE);
+    if (!Reset_n_i) assert (Data_o == `INITVAL);
 
 
-  // Fail with unbounded prove using SMTBMC, maybe the assertions have to be more strict
-  // there have to be more restrictions.
-  // With abc pdr is can be successfully proved
-  assert property (@(posedge Clk_i) Data_o >= `INIT_VALUE && Data_o <= 64);
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o < 64 |=> Data_o == $past(Data_o) + 1);
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o == 64 |=> $stable(Data_o));
+  // Fails with unbounded prove using SMTBMC, maybe
+  // the assumptions/assertions have to be more strict.
+  // With abc pdr this can be successfully proved.
+  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o <  `ENDVAL |=> Data_o == $past(Data_o) + 1);
+  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o == `ENDVAL |=> $stable(Data_o));
 
 
 
