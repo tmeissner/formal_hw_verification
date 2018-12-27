@@ -42,11 +42,16 @@ architecture rtl of vai_reg is
   signal s_data   : std_logic_vector(7 downto 0);
 
   signal s_error : boolean;
+  signal s_dout_accepted : boolean;
 
   alias a_addr : std_logic_vector(3 downto 0) is s_header(7 downto 4);
 
 
 begin
+
+
+  s_dout_accepted <= true when DoutValid_o = '1' and DoutAccept_i = '1' else
+                     false;
 
 
   process (Reset_n_i, Clk_i) is
@@ -123,7 +128,7 @@ begin
           DoutValid_o <= '1';
           DoutStart_o <= '1';
           Dout_o      <= s_header;
-          if (DoutAccept_i = '1') then
+          if (s_dout_accepted) then
             DoutValid_o <= '0';
             DoutStart_o <= '0';
             if (s_header(3 downto 0) = C_WRITE) then
@@ -136,7 +141,7 @@ begin
         when SEND_DATA =>
           DoutValid_o <= '1';
           Dout_o      <= s_data;
-          if (DoutAccept_i = '1') then
+          if (s_dout_accepted) then
             DoutValid_o <= '0';
             s_fsm_state <= SEND_FOOTER;
           end if;
@@ -145,7 +150,7 @@ begin
           DoutValid_o <= '1';
           DoutStop_o  <= '1';
           Dout_o      <= x"01" when s_error else x"00";
-          if (DoutAccept_i = '1') then
+          if (s_dout_accepted) then
             Dout_o      <= (others => '0');
             DoutValid_o <= '0';
             DoutStop_o  <= '0';
