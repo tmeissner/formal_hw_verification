@@ -79,18 +79,19 @@ begin
           s_header    <= (others => '0');
           s_data      <= (others => '0');
           s_error     <= false;
+          DinAccept_o <= '1';
           s_fsm_state <= GET_HEADER;
 
         when GET_HEADER =>
-          DinAccept_o <= '1';
           if (DinValid_i = '1' and DinStart_i = '1') then
-            DinAccept_o <= '0';
             s_header    <= Din_i;
             if (Din_i(3 downto 0) = C_READ and DinStop_i = '1') then
+              DinAccept_o <= '0';
               s_fsm_state <= GET_DATA;
             elsif (Din_i(3 downto 0) = C_WRITE and DinStop_i = '0') then
               s_fsm_state <= SET_DATA;
             else
+              DinAccept_o <= '0';
               s_fsm_state <= IDLE;
             end if;
           end if;
@@ -105,16 +106,11 @@ begin
           s_fsm_state <= SEND_HEADER;
 
         when SET_DATA =>
-          DinAccept_o <= '1';
           if (DinValid_i = '1') then
             DinAccept_o <= '0';
             if (DinStop_i = '1') then
               if (unsigned(a_addr) <= 7) then
-                -- Following line results in a Segmentation Fault
                 s_register(to_integer(unsigned(a_addr))) <= Din_i;
-                -- Following line results in following error:
-                -- ERROR: Unsupported cell type $dlatchsr for cell $verific$wide_dlatchrs_8.$verific$i1$172.
-                s_register(0) <= Din_i;
               else
                 s_error <= true;
               end if;
