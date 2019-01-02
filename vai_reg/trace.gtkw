@@ -1,43 +1,22 @@
-[*]
-[*] GTKWave Analyzer v3.3.91 (w)1999-2018 BSI
-[*] Sat Dec 29 18:53:51 2018
-[*]
-[dumpfile_size] 13145
-[timestart] 0
-[size] 1344 495
-[pos] -1 -1
-*-5.329921 40 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
-[treeopen] vai_reg.
-[sst_width] 193
-[signals_width] 199
-[sst_expanded] 1
-[sst_vpaned_height] 130
-@28
+smt_step
+-Global
+vai_reg.Reset_n_i
 vai_reg.properties.Clk_i
-@200
 -VAI req
-@28
 vai_reg.properties.DinStart_i
 vai_reg.properties.DinStop_i
-@22
 vai_reg.properties.Din_i[7:0]
-@28
 vai_reg.properties.DinValid_i
 vai_reg.properties.DinAccept_o
-@200
 -VAI ack
-@28
 vai_reg.properties.DoutStart_o
 vai_reg.properties.DoutStop_o
-@22
 vai_reg.properties.Dout_o[7:0]
-@28
 vai_reg.properties.DoutValid_o
 vai_reg.properties.DoutAccept_i
-@200
 -Internal
-@28
 vai_reg.properties.s_fsm_state[2:0]
+vai_reg.properties.s_header[7:0]
+vai_reg.properties.s_data[7:0]
 vai_reg.properties.s_register[63:0]
-[pattern_trace] 1
-[pattern_trace] 0
+vai_reg.properties.s_error
