@@ -24,10 +24,12 @@ end entity alu;
 architecture rtl of alu is
 
 
-  constant c_add : std_logic_vector(1 downto 0) := "00";
-  constant c_sub : std_logic_vector(1 downto 0) := "01";
-  constant c_and : std_logic_vector(1 downto 0) := "10";
-  constant c_or  : std_logic_vector(1 downto 0) := "11";
+  subtype t_opc is std_logic_vector(Opc_i'length-1 downto 0);
+
+  constant c_add : t_opc := "00";
+  constant c_sub : t_opc := "01";
+  constant c_and : t_opc := "10";
+  constant c_or  : t_opc := "11";
 
 
 begin
@@ -40,14 +42,14 @@ begin
     elsif (rising_edge(Clk_i)) then
       case Opc_i is
         when c_add => (OverFlow_o, Dout_o) <=
-	  std_logic_vector(resize(unsigned(DinA_i), Dout_o'length+1) +
-	                   resize(unsigned(DinB_i), Dout_o'length+1));
+          std_logic_vector(resize(unsigned(DinA_i), Dout_o'length+1) +
+                           resize(unsigned(DinB_i), Dout_o'length+1));
         when c_sub => (OverFlow_o, Dout_o) <=
-	  std_logic_vector(resize(unsigned(DinA_i), Dout_o'length+1) -
-	                   resize(unsigned(DinB_i), Dout_o'length+1));
-	when c_and => Dout_o <= DinA_i and DinB_i;
-	when c_or  => Dout_o <= DinA_i or DinB_i;
-	when others => null;
+          std_logic_vector(resize(unsigned(DinA_i), Dout_o'length+1) -
+                           resize(unsigned(DinB_i), Dout_o'length+1));
+        when c_and => Dout_o <= DinA_i and DinB_i;
+        when c_or  => Dout_o <= DinA_i or DinB_i;
+        when others => null;
       end case;
     end if;
   end process;

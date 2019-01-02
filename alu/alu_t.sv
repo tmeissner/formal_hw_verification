@@ -41,24 +41,29 @@ module alu_t (
   always @(posedge Clk_i)
     init_state = 0;
 
+  default clocking
+    @(posedge Clk_i);
+  endclocking
+
+  default disable iff (!Reset_n_i);
+
 
   bit unsigned [`WIDTH:0] dina, dinb;
 
   assign dina = DinA_i;
   assign dinb = DinB_i;
 
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_ADD |=> Dout_o == ($past(DinA_i) + $past(DinB_i)));
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_ADD && (dina + dinb) > 2**`WIDTH-1 |=> OverFlow_o);
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_SUB |=> Dout_o == ($past(DinA_i) - $past(DinB_i)));
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_SUB && (dina - dinb) > 2**`WIDTH-1 |=> OverFlow_o);
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_AND |=> Dout_o == ($past(DinA_i) & $past(DinB_i)));
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Opc_i == `OPC_OR |=> Dout_o == ($past(DinA_i) | $past(DinB_i)));
+  assert property (Opc_i == `OPC_ADD |=> Dout_o == ($past(DinA_i) + $past(DinB_i)));
+  assert property (Opc_i == `OPC_ADD && (dina + dinb) > 2**`WIDTH-1 |=> OverFlow_o);
+  assert property (Opc_i == `OPC_SUB |=> Dout_o == ($past(DinA_i) - $past(DinB_i)));
+  assert property (Opc_i == `OPC_SUB && (dina - dinb) > 2**`WIDTH-1 |=> OverFlow_o);
+  assert property (Opc_i == `OPC_AND |=> Dout_o == ($past(DinA_i) & $past(DinB_i)));
+  assert property (Opc_i == `OPC_OR |=> Dout_o == ($past(DinA_i) | $past(DinB_i)));
 
 
 
   property cover_opc (opc);
-    @(posedge Clk_i)
-      disable iff (!Reset_n_i) Opc_i == opc;
+    Opc_i == opc;
   endproperty
 
   cover property (cover_opc(`OPC_ADD));

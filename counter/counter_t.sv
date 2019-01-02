@@ -38,19 +38,23 @@ module counter_t (
 
   // Use global clock to constrain the DUT clock
   always @($global_clock) begin
-    assume(Clk_i != $past(Clk_i));
+    assume (Clk_i != $past(Clk_i));
   end
+
+  default clocking
+    @(posedge Clk_i);
+  endclocking
+
+  default disable iff (!Reset_n_i);
 
   // Immediate assertions
   always @(*)
     if (!Reset_n_i) assert (Data_o == `INITVAL);
 
-  // Fails with unbounded prove using SMTBMC, maybe
-  // the assumptions/assertions have to be more strict.
-  // With abc pdr this can be successfully proved.
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o <  `ENDVAL |=> Data_o == $past(Data_o) + 1);
-  assert property (@(posedge Clk_i) disable iff (!Reset_n_i) Data_o == `ENDVAL |=> $stable(Data_o));
-  assert property (@(posedge Clk_i) Data_o >= `INITVAL && Data_o <= `ENDVAL);
+  // Concurrent assertions
+  assert property (Data_o <  `ENDVAL |=> Data_o == $past(Data_o) + 1);
+  assert property (Data_o == `ENDVAL |=> $stable(Data_o));
+  assert property (Data_o >= `INITVAL && Data_o <= `ENDVAL);
 
 
 endmodule
