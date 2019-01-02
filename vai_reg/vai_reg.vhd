@@ -50,8 +50,7 @@ architecture rtl of vai_reg is
 begin
 
 
-  s_dout_accepted <= true when DoutValid_o = '1' and DoutAccept_i = '1' else
-                     false;
+  s_dout_accepted <= (DoutValid_o and DoutAccept_i) = '1';
 
 
   process (Reset_n_i, Clk_i) is
