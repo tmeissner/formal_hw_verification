@@ -20,9 +20,18 @@ module properties (
 );
 
 
+  // commands
+  `define READ      0
+  `define WRITE     1
 
-  `define READ 0
-  `define WRITE 1
+  // FSM states
+  `define IDLE        0
+  `define GET_HEADER  1
+  `define GET_DATA    2
+  `define SET_DATA    3
+  `define SEND_HEADER 4
+  `define SEND_DATA   5
+  `define SEND_FOOTER 6
 
 
   reg init_state = 1;
@@ -71,7 +80,7 @@ module properties (
   // Asserts
 
   fsm_state_valid_a : assert property (
-    s_fsm_state >= 0 && s_fsm_state <= 6
+    s_fsm_state >= `IDLE && s_fsm_state <= `SEND_FOOTER
   );
 
   valid_when_start_a : assert property (
@@ -95,7 +104,7 @@ module properties (
   );
 
   store_header_a : assert property (
-    s_fsm_state == 1 && DinValid_i && DinStart_i && DinAccept_o |=>
+    s_fsm_state == `GET_HEADER && DinValid_i && DinStart_i && DinAccept_o |=>
     s_header == $past(Din_i)
   );
 
@@ -104,66 +113,73 @@ module properties (
 
   // IDLE -> GET_HEADER
   fsm_idle_to_get_header_a : assert property (
-    s_fsm_state == 0 |=> s_fsm_state == 1
+    s_fsm_state == `IDLE |=>
+    s_fsm_state == `GET_HEADER
   );
 
   // GET_HEADER -> GET_DATA
   fsm_get_header_to_get_data_a : assert property (
-    s_fsm_state == 1 && DinValid_i && DinStart_i && DinStop_i && Din_i[3:0] == `READ |=>
-    s_fsm_state == 2
+    s_fsm_state == `GET_HEADER && DinValid_i && DinStart_i && DinStop_i && Din_i[3:0] == `READ |=>
+    s_fsm_state == `GET_DATA
   );
 
   // GET_HEADER -> SET_DATA
   fsm_get_header_to_set_data_a : assert property (
-    s_fsm_state == 1 && DinValid_i && DinStart_i && !DinStop_i && Din_i[3:0] == `WRITE |=>
-    s_fsm_state == 3
+    s_fsm_state == `GET_HEADER && DinValid_i && DinStart_i && !DinStop_i && Din_i[3:0] == `WRITE |=>
+    s_fsm_state == `SET_DATA
   );
 
   // GET_DATA -> SEND_HEADER
   fsm_get_data_to_send_header_a : assert property (
-    s_fsm_state == 2 |=> s_fsm_state == 4
+    s_fsm_state == `GET_DATA |=>
+    s_fsm_state == `SEND_HEADER
   );
 
   // SET_DATA -> IDLE
   fsm_set_data_to_idle_a : assert property (
-    s_fsm_state == 3 && DinValid_i && !DinStop_i |=> s_fsm_state == 0
+    s_fsm_state == `SET_DATA && DinValid_i && !DinStop_i |=>
+    s_fsm_state == `IDLE
   );
 
   // SET_DATA -> SEND_HEADER
   fsm_set_data_to_send_header_a : assert property (
-    s_fsm_state == 3 && DinValid_i && DinStop_i |=> s_fsm_state == 4
+    s_fsm_state == `SET_DATA && DinValid_i && DinStop_i |=> s_fsm_state == `SEND_HEADER
   );
 
   // SEND_HEADER -> SEND_DATA
   fsm_send_header_to_send_data_a : assert property (
-    s_fsm_state == 4 && DoutValid_o && DoutAccept_i && s_header[3:0] == `READ |=> s_fsm_state == 5
+    s_fsm_state == `SEND_HEADER && DoutValid_o && DoutAccept_i && s_header[3:0] == `READ |=>
+    s_fsm_state == `SEND_DATA
   );
 
   // SEND_HEADER -> SEND_FOOTER
   fsm_send_header_to_send_footer_a : assert property (
-    s_fsm_state == 4 && DoutValid_o && DoutAccept_i && s_header[3:0] == `WRITE |=> s_fsm_state == 6
+    s_fsm_state == `SEND_HEADER && DoutValid_o && DoutAccept_i && s_header[3:0] == `WRITE |=>
+    s_fsm_state == `SEND_FOOTER
   );
 
   // SEND_DATA -> SEND_FOOTER
   fsm_send_data_to_send_footer_a : assert property (
-    s_fsm_state == 5 && DoutValid_o && DoutAccept_i |=> s_fsm_state == 6
+    s_fsm_state == `SEND_DATA && DoutValid_o && DoutAccept_i |=>
+    s_fsm_state == `SEND_FOOTER
   );
 
   // SEND_FOOTER -> IDLE
   fsm_send_footer_to_idle_a : assert property (
-    s_fsm_state == 6 && DoutValid_o && DoutAccept_i |=> s_fsm_state == 0
+    s_fsm_state == `SEND_FOOTER && DoutValid_o && DoutAccept_i |=>
+    s_fsm_state == `IDLE
   );
 
 
   // Protocol checks
 
   header_in_valid_range_a : assert property (
-    s_fsm_state > 1 |->
+    s_fsm_state > `GET_HEADER |->
     s_header[3:0] inside {`READ, `WRITE}
   );
 
   header_stable_a : assert property (
-    s_fsm_state > 1 |=>
+    s_fsm_state > `GET_HEADER |=>
     $stable(s_header)
   );
 
@@ -173,12 +189,12 @@ module properties (
   );
 
   error_flag_initial_false_a : assert property (
-    s_fsm_state inside {1, 2, 3} |->
+    s_fsm_state inside {`GET_HEADER, `GET_DATA, `SET_DATA} |->
     !s_error
   );
 
   error_flag_set_invalid_addr_a : assert property (
-    s_fsm_state >= 4 |->
+    s_fsm_state >= `SEND_HEADER |->
     s_error == !(s_header[7:4] <= 7)
   );
 
@@ -212,15 +228,18 @@ module properties (
   );
 
   doutstart_in_valid_fsm_state_a : assert property (
-    DoutStart_o |-> s_fsm_state == 4
+    DoutStart_o |->
+    s_fsm_state == `SEND_HEADER
   );
 
   doutstop_in_valid_fsm_state_a : assert property (
-    DoutStop_o |-> s_fsm_state == 6
+    DoutStop_o |->
+    s_fsm_state == `SEND_FOOTER
   );
 
   doutvalid_in_valid_fsm_states_a : assert property (
-    DoutValid_o |-> s_fsm_state >= 4 && s_fsm_state <= 6
+    DoutValid_o |->
+    s_fsm_state inside {`SEND_HEADER, `SEND_DATA, `SEND_FOOTER}
   );
 
   // Write ack frame
@@ -242,19 +261,19 @@ module properties (
 
   // Register read in GET_DATA if valid adress was given
   get_data_valid_a : assert property (
-    s_fsm_state > 2 && s_header[7:4] <= 7 && s_header[3:0] == `READ |->
+    s_fsm_state > `GET_DATA && s_header[7:4] <= 7 && s_header[3:0] == `READ |->
     s_data == s_register[s_header[7:4]]
   );
 
   // Error flag set & no register read in GET_DATA if invalid adress was given
   get_data_invalid_a : assert property (
-    s_fsm_state > 2 && s_header[7:4] > 7 && s_header[3:0] == `READ |=>
+    s_fsm_state > `GET_DATA && s_header[7:4] > 7 && s_header[3:0] == `READ |=>
     s_data == 0 && s_error
   );
 
   // register stable if read request
   reg_stable_during_read_a : assert property (
-    s_fsm_state > 1 && s_header[3:0] == `READ |=>
+    s_fsm_state > `GET_HEADER && s_header[3:0] == `READ |=>
     $stable(s_register)
   );
 
@@ -274,28 +293,28 @@ module properties (
 
   // Register write in SET_DATA if valid adress was given
   set_data_valid_a : assert property (
-    s_fsm_state == 3 && DinValid_i && DinAccept_o && DinStop_i && s_header[7:4] <= 7 |=>
+    s_fsm_state == `SET_DATA && DinValid_i && DinAccept_o && DinStop_i && s_header[7:4] <= 7 |=>
     s_register[s_header[7:4]] == $past(Din_i)
   );
 
   // Error flag set & no register write in SET_DATA if invalid adress was given
   set_data_invalid_a : assert property (
-    s_fsm_state == 3 && DinValid_i && DinAccept_o && DinStop_i && s_header[7:4] > 7 |=>
+    s_fsm_state == `SET_DATA && DinValid_i && DinAccept_o && DinStop_i && s_header[7:4] > 7 |=>
     $stable(s_register) && s_error
   );
 
   // No register write in SET_DATA if stop don't active
   set_data_discard_a : assert property (
-    s_fsm_state == 3 && DinValid_i && DinAccept_o && !DinStop_i |=>
+    s_fsm_state == `SET_DATA && DinValid_i && DinAccept_o && !DinStop_i |=>
     $stable(s_register)
   );
 
   fsm_read_req_when_get_data_a : assert property (
-    s_fsm_state == 2 |-> s_header[3:0] == `READ
+    s_fsm_state == `GET_DATA |-> s_header[3:0] == `READ
   );
 
   fsm_write_req_when_set_data_a : assert property (
-    s_fsm_state == 3 |-> s_header[3:0] == `WRITE
+    s_fsm_state == `SET_DATA |-> s_header[3:0] == `WRITE
   );
 
 
