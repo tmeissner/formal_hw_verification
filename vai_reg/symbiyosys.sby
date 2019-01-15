@@ -6,7 +6,7 @@ mode prove
 
 [engines]
 smtbmc
-#abc pdr
+abc pdr
 
 [script]
 verific -vhdl vai_reg.vhd
