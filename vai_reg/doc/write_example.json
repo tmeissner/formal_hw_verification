@@ -1,0 +1,23 @@
+{signal: [
+  {name: 'Reset_n_i',   wave: '01........'},
+  {name: 'Clk_i',       wave: 'p.........'},
+  {},
+  {name: 's_fsm_state', wave: '2.2.22.2.2', data: ['IDLE', 'GET_HEADER', 'SET_DATA', 'SEND_HEADER', 'SEND_FOOTER', 'IDLE']},
+  {},
+  {name: 'Din_i',       wave: 'x..34x....', data: ['header', 'data']},
+  {name: 'DinStart_i',  wave: '0..10.....'},
+  {name: 'DinStop_i',   wave: '0...10....'},
+  {name: 'DinValid_i',  wave: '0..1.0....'},
+  {name: 'DinAccept_o', wave: '0.1..0....'},
+  {},
+  {name: 'Dout_o',       wave: 'x....3.4.x', data: ['header', 'footer']},
+  {name: 'DoutStart_o',  wave: '0....1.0..'},
+  {name: 'DoutStop_o',   wave: '0......1.0'},
+  {name: 'DoutValid_o',  wave: '0....1...0'},
+  {name: 'DoutAccept_i', wave: '0.....1010'},
+],
+  config: { hscale: 2 },
+  head:{
+   text:['tspan', {class:'h3'}, 'Write example (opcode 0x1)']
+ }
+}
