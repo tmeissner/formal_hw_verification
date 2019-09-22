@@ -1,5 +1,5 @@
-vai_reg: vai_reg.vhd properties.sv symbiyosys.sby
-	sby -f -d work symbiyosys.sby
+vai_reg: vai_reg.vhd symbiyosys.sby
+	sby --yosys "yosys -m ghdl" -f -d work symbiyosys.sby
 
 
 clean:

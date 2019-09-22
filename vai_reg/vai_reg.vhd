@@ -159,5 +159,11 @@ begin
   end process;
 
 
+  -- psl default clock is rising_edge(Clk_i);
+
+  -- psl restrict {Reset_n_i = '0'[*5]; Reset_n_i = '1'[+]}[*1];
+  -- psl assert always unsigned(a_addr) < 8;
+
+
 end architecture rtl;
 

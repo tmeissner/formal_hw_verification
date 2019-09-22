@@ -1,19 +1,13 @@
 [options]
 depth 30
-wait on
-mode prove
-#mode bmc
+mode bmc
 
 [engines]
-smtbmc
-abc pdr
+smtbmc z3
 
 [script]
-verific -vhdl vai_reg.vhd
-verific -formal properties.sv
-verific -import -extnets -all vai_reg
+ghdl --std=08 -fpsl vai_reg.vhd -e vai_reg
 prep -top vai_reg
 
 [files]
 vai_reg.vhd
-properties.sv
