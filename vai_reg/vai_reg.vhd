@@ -5,6 +5,9 @@ use ieee.numeric_std.all;
 
 
 entity vai_reg is
+  generic (
+    Formal : boolean := true
+  );
   port (
     Reset_n_i    : in  std_logic;
     Clk_i        : in  std_logic;
@@ -83,7 +86,7 @@ begin
 
         when GET_HEADER =>
           if (DinValid_i = '1' and DinStart_i = '1') then
-            s_header    <= Din_i;
+            s_header <= Din_i;
             if (Din_i(3 downto 0) = C_READ and DinStop_i = '1') then
               DinAccept_o <= '0';
               s_fsm_state <= GET_DATA;
@@ -97,7 +100,7 @@ begin
 
         when GET_DATA =>
           if (unsigned(a_addr) <= 7) then
-            s_data <= s_register(to_integer(unsigned(a_addr)));
+            -- s_data <= s_register(to_integer(unsigned(a_addr)));
           else
             s_error <= true;
             s_data  <= (others => '0');
@@ -109,7 +112,7 @@ begin
             DinAccept_o <= '0';
             if (DinStop_i = '1') then
               if (unsigned(a_addr) <= 7) then
-                s_register(to_integer(unsigned(a_addr))) <= Din_i;
+                -- s_register(to_integer(unsigned(a_addr))) <= Din_i;
               else
                 s_error <= true;
               end if;
@@ -159,10 +162,133 @@ begin
   end process;
 
 
-  -- psl default clock is rising_edge(Clk_i);
 
-  -- psl restrict {Reset_n_i = '0'[*5]; Reset_n_i = '1'[+]}[*1];
-  -- psl assert always unsigned(a_addr) < 8;
+  FormalG : if Formal generate
+
+    signal s_addr : natural range 0 to 15;
+    type t_cmd is (READ, WRITE, NOP);
+    signal s_cmd : t_cmd;
+    signal s_start : std_logic;
+    signal s_stop  : std_logic;
+    signal s_dout : std_logic_vector(7 downto 0);
+
+  begin
+
+    -- VHDL helper logic
+    process is
+    begin
+      wait until rising_edge(Clk_i);
+      s_start <= DoutStart_o;
+      s_stop  <= DoutStop_o;
+      s_dout  <= Dout_o;
+      if (s_fsm_state = GET_HEADER) then
+        if (DinValid_i = '1' and DinStart_i = '1') then
+          s_cmd  <= READ  when Din_i(3 downto 0) = x"0" else
+                    WRITE when Din_i(3 downto 0) = x"1" else
+                    NOP;
+          s_addr <= to_integer(unsigned(Din_i(7 downto 4)));
+        end if;
+      end if;
+    end process;
+
+    default clock is rising_edge(Clk_i);
+
+    INITIAL_RESET : restrict {Reset_n_i = '0'[*2]; Reset_n_i = '1'[+]}[*1];
+
+    -- FSM states in valid range
+    FSM_STATES_VALID : assert always
+      s_fsm_state = IDLE or s_fsm_state = GET_HEADER or
+      s_fsm_state = GET_DATA or s_fsm_state = SET_DATA or
+      s_fsm_state = SEND_HEADER or s_fsm_state = SEND_DATA or
+      s_fsm_state = SEND_FOOTER;
+
+    -- Discard jobs with invalid command
+    INV_CMD_DISCARD : assert always
+      s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
+      Din_i(3 downto 0) /= x"0" and Din_i(3 downto 0) /= x"1"
+      ->
+      next s_fsm_state = IDLE;
+
+    -- Discard read job with invalid stop flags
+    READ_INV_FLAGS_DISCARD : assert always
+      s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
+      Din_i(3 downto 0) = x"0" and DinStop_i = '0'
+      ->
+      next s_fsm_state = IDLE;
+
+    -- Discard write job with invalid stop flags
+    WRITE_INV_FLAGS_DISCARD : assert always
+      s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
+      Din_i(3 downto 0) = x"1" and DinStop_i = '1'
+      ->
+      next s_fsm_state = IDLE;
+
+    -- After a valid job read request,
+    -- a job read acknowledge has to follow
+    READ_VALID_ACK : assert always
+      {s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
+      Din_i(3 downto 0) = x"0" and DinStop_i = '1'}
+      |=>
+      {-- Job ack header cycle
+       (not DoutValid_o)[*];
+       (DoutValid_o and DoutStart_o and not DoutAccept_i)[*];
+       (DoutValid_o and DoutStart_o and DoutAccept_i);
+       -- Job ack data cycle
+       (not DoutValid_o)[*];
+       (DoutValid_o and not DoutStart_o and not DoutStop_o and not DoutAccept_i)[*];
+       (DoutValid_o and not DoutStart_o and not DoutStop_o and DoutAccept_i);
+       -- Job ack footer cycle
+       (not DoutValid_o)[*];
+       DoutValid_o and DoutStop_o};
+
+    -- After a valid job write request,
+    -- a job read acknowledge has to follow
+    WRITE_VALID_ACK : assert always
+      {s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
+      Din_i(3 downto 0) = x"1" and DinStop_i = '0';
+      (not DinValid_i)[*];
+      DinValid_i and DinStop_i}
+      |=>
+      {-- Job ack header cycle
+       (not DoutValid_o)[*];
+       (DoutValid_o and DoutStart_o and not DoutAccept_i)[*];
+       (DoutValid_o and DoutStart_o and DoutAccept_i);
+       -- Job ack footer cycle
+       (not DoutValid_o)[*];
+       DoutValid_o and DoutStop_o};
+
+     -- Start & stop flag have to be exclusive
+     NEVER_START_STOP : assert never
+       DoutStart_o and DoutStop_o;
+
+     -- Start & Stop have to be active together with valid
+     START_STOP_VALID : assert always
+       DoutStart_o or DoutStop_o -> DoutValid_o;
+
+     -- Valid has to be stable until accepted
+     VALID_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (DoutValid_o until_ DoutAccept_i);
+
+     -- Start has to be stable until accepted
+     START_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (DoutStart_o = s_start until_ DoutAccept_i);
+
+     -- Stop has to be stable until accepted
+     STOP_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (DoutStop_o = s_stop until_ DoutAccept_i);
+
+     -- Data has to be stable until accepted
+     DATA_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (Dout_o = s_dout until_ DoutAccept_i);
+
+--    READ_DATA : assert always
+--      (DoutValid_o and not DoutStart_o and not DoutStop_o) ->
+--      (Dout_o = s_register(to_integer(unsigned(a_addr))));
+
+    FOOTER_VALID : cover {DoutValid_o = '1' and DoutStop_o = '1' and Dout_o = 8x"0"};
+    FOOTER_ERR   : cover {DoutValid_o = '1' and DoutStop_o = '1' and Dout_o = 8x"1"};
+
+  end generate FormalG;
 
 
 end architecture rtl;
