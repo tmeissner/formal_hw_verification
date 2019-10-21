@@ -166,11 +166,21 @@ begin
   FormalG : if Formal generate
 
     signal s_addr : natural range 0 to 15;
+
     type t_cmd is (READ, WRITE, NOP);
     signal s_cmd : t_cmd;
-    signal s_start : std_logic;
-    signal s_stop  : std_logic;
-    signal s_dout : std_logic_vector(7 downto 0);
+    
+    type t_vai is record
+      Start  : std_logic;
+      Stop   : std_logic;
+      Data   : std_logic_vector(7 downto 0);
+      Valid  : std_logic;
+      Accept : std_logic;
+    end record t_vai;
+    
+    signal s_job_req : t_vai;
+    signal s_job_ack : t_vai;
+
 
   begin
 
@@ -178,9 +188,8 @@ begin
     process is
     begin
       wait until rising_edge(Clk_i);
-      s_start <= DoutStart_o;
-      s_stop  <= DoutStop_o;
-      s_dout  <= Dout_o;
+      s_job_req <= (DinStart_i, DinStop_i, Din_i, DinValid_i, DinAccept_o);
+      s_job_ack <= (DoutStart_o, DoutStop_o, Dout_o, DoutValid_o, DoutAccept_i);
       if (s_fsm_state = GET_HEADER) then
         if (DinValid_i = '1' and DinStart_i = '1') then
           s_cmd  <= READ  when Din_i(3 downto 0) = x"0" else
@@ -193,7 +202,33 @@ begin
 
     default clock is rising_edge(Clk_i);
 
+
+    -- RESTRICTIONS
+
+    -- Initial reset
     INITIAL_RESET : restrict {Reset_n_i = '0'[*2]; Reset_n_i = '1'[+]}[*1];
+
+
+    -- CONSTRAINTS
+    
+    -- Valid stable until accepted
+    JOB_REQ_VALID_STABLE : assume always
+      DinValid_i and not DinAccept_o -> next (DinValid_i until_ DinAccept_o);
+
+    -- Start stable until accepted
+    JOB_REQ_START_STABLE : assume always
+      DinValid_i and not DinAccept_o -> next (DinStart_i = s_job_req.Start until_ DinAccept_o);
+      
+    -- Stop stable until accepted
+    JOB_REQ_STOP_STABLE : assume always
+      DinValid_i and not DinAccept_o -> next (DinStop_i = s_job_req.Stop until_ DinAccept_o);
+      
+    -- Data stable until accepted
+    JOB_REQ_DIN_STABLE : assume always
+      DinValid_i and not DinAccept_o -> next (Din_i = s_job_req.Data until_ DinAccept_o);
+
+
+    -- ASSERTIONS
 
     -- FSM states in valid range
     FSM_STATES_VALID : assert always
@@ -258,32 +293,35 @@ begin
        DoutValid_o and DoutStop_o};
 
      -- Start & stop flag have to be exclusive
-     NEVER_START_STOP : assert never
+     JOB_ACK_NEVER_START_STOP : assert never
        DoutStart_o and DoutStop_o;
 
      -- Start & Stop have to be active together with valid
-     START_STOP_VALID : assert always
+     JOB_ACK_START_STOP_VALID : assert always
        DoutStart_o or DoutStop_o -> DoutValid_o;
 
      -- Valid has to be stable until accepted
-     VALID_STABLE : assert always
+     JOB_ACK_VALID_STABLE : assert always
        DoutValid_o and not DoutAccept_i -> next (DoutValid_o until_ DoutAccept_i);
 
      -- Start has to be stable until accepted
-     START_STABLE : assert always
-       DoutValid_o and not DoutAccept_i -> next (DoutStart_o = s_start until_ DoutAccept_i);
+     JOB_ACK_START_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (DoutStart_o = s_job_ack.Start until_ DoutAccept_i);
 
      -- Stop has to be stable until accepted
-     STOP_STABLE : assert always
-       DoutValid_o and not DoutAccept_i -> next (DoutStop_o = s_stop until_ DoutAccept_i);
+     JOB_ACK_STOP_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (DoutStop_o = s_job_ack.Stop until_ DoutAccept_i);
 
      -- Data has to be stable until accepted
-     DATA_STABLE : assert always
-       DoutValid_o and not DoutAccept_i -> next (Dout_o = s_dout until_ DoutAccept_i);
+     JOB_ACK_DOUT_STABLE : assert always
+       DoutValid_o and not DoutAccept_i -> next (Dout_o = s_job_ack.Data until_ DoutAccept_i);
 
 --    READ_DATA : assert always
 --      (DoutValid_o and not DoutStart_o and not DoutStop_o) ->
 --      (Dout_o = s_register(to_integer(unsigned(a_addr))));
+
+
+    -- FUNCTIONAL COVERAGE
 
     FOOTER_VALID : cover {DoutValid_o = '1' and DoutStop_o = '1' and Dout_o = 8x"0"};
     FOOTER_ERR   : cover {DoutValid_o = '1' and DoutStop_o = '1' and Dout_o = 8x"1"};
