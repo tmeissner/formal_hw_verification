@@ -100,7 +100,7 @@ begin
 
         when GET_DATA =>
           if (unsigned(a_addr) <= 7) then
-            -- s_data <= s_register(to_integer(unsigned(a_addr)));
+            s_data <= s_register(to_integer(unsigned(a_addr)));
           else
             s_error <= true;
             s_data  <= (others => '0');
@@ -112,7 +112,7 @@ begin
             DinAccept_o <= '0';
             if (DinStop_i = '1') then
               if (unsigned(a_addr) <= 7) then
-                -- s_register(to_integer(unsigned(a_addr))) <= Din_i;
+                 s_register(to_integer(unsigned(a_addr))) <= Din_i;
               else
                 s_error <= true;
               end if;
@@ -165,11 +165,12 @@ begin
 
   FormalG : if Formal generate
 
+
     signal s_addr : natural range 0 to 15;
 
     type t_cmd is (READ, WRITE, NOP);
     signal s_cmd : t_cmd;
-    
+
     type t_vai is record
       Start  : std_logic;
       Stop   : std_logic;
@@ -177,12 +178,13 @@ begin
       Valid  : std_logic;
       Accept : std_logic;
     end record t_vai;
-    
+
     signal s_job_req : t_vai;
     signal s_job_ack : t_vai;
 
 
   begin
+
 
     -- VHDL helper logic
     process is
@@ -200,8 +202,8 @@ begin
       end if;
     end process;
 
-    default clock is rising_edge(Clk_i);
 
+    default clock is rising_edge(Clk_i);
 
     -- RESTRICTIONS
 
@@ -210,7 +212,7 @@ begin
 
 
     -- CONSTRAINTS
-    
+
     -- Valid stable until accepted
     JOB_REQ_VALID_STABLE : assume always
       DinValid_i and not DinAccept_o -> next (DinValid_i until_ DinAccept_o);
@@ -218,17 +220,28 @@ begin
     -- Start stable until accepted
     JOB_REQ_START_STABLE : assume always
       DinValid_i and not DinAccept_o -> next (DinStart_i = s_job_req.Start until_ DinAccept_o);
-      
+
     -- Stop stable until accepted
     JOB_REQ_STOP_STABLE : assume always
       DinValid_i and not DinAccept_o -> next (DinStop_i = s_job_req.Stop until_ DinAccept_o);
-      
+
     -- Data stable until accepted
     JOB_REQ_DIN_STABLE : assume always
       DinValid_i and not DinAccept_o -> next (Din_i = s_job_req.Data until_ DinAccept_o);
 
 
     -- ASSERTIONS
+
+    -- Reset values
+    AFTER_RESET : assert always
+      not Reset_n_i
+      ->
+      s_fsm_state = IDLE and
+      not DinAccept_o and
+      not DoutStart_o and
+      not DoutStop_o  and
+      not DoutValid_o and
+      s_register = (0 to 7 => x"00");
 
     -- FSM states in valid range
     FSM_STATES_VALID : assert always
@@ -262,34 +275,34 @@ begin
     -- a job read acknowledge has to follow
     READ_VALID_ACK : assert always
       {s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
-      Din_i(3 downto 0) = x"0" and DinStop_i = '1'}
+       Din_i(3 downto 0) = x"0" and DinStop_i = '1'}
       |=>
       {-- Job ack header cycle
-       (not DoutValid_o)[*];
-       (DoutValid_o and DoutStart_o and not DoutAccept_i)[*];
-       (DoutValid_o and DoutStart_o and DoutAccept_i);
+       not DoutValid_o [*];
+       DoutValid_o and DoutStart_o and not DoutAccept_i [*];
+       DoutValid_o and DoutStart_o and DoutAccept_i;
        -- Job ack data cycle
-       (not DoutValid_o)[*];
-       (DoutValid_o and not DoutStart_o and not DoutStop_o and not DoutAccept_i)[*];
-       (DoutValid_o and not DoutStart_o and not DoutStop_o and DoutAccept_i);
+       not DoutValid_o [*];
+       DoutValid_o and not DoutStart_o and not DoutStop_o and not DoutAccept_i [*];
+       DoutValid_o and not DoutStart_o and not DoutStop_o and DoutAccept_i;
        -- Job ack footer cycle
-       (not DoutValid_o)[*];
+       not DoutValid_o [*];
        DoutValid_o and DoutStop_o};
 
     -- After a valid job write request,
     -- a job read acknowledge has to follow
     WRITE_VALID_ACK : assert always
       {s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
-      Din_i(3 downto 0) = x"1" and DinStop_i = '0';
-      (not DinValid_i)[*];
-      DinValid_i and DinStop_i}
+       Din_i(3 downto 0) = x"1" and DinStop_i = '0';
+       not DinValid_i [*];
+       DinValid_i and DinStop_i}
       |=>
       {-- Job ack header cycle
-       (not DoutValid_o)[*];
-       (DoutValid_o and DoutStart_o and not DoutAccept_i)[*];
-       (DoutValid_o and DoutStart_o and DoutAccept_i);
+       not DoutValid_o [*];
+       DoutValid_o and DoutStart_o and not DoutAccept_i [*];
+       DoutValid_o and DoutStart_o and DoutAccept_i;
        -- Job ack footer cycle
-       (not DoutValid_o)[*];
+       not DoutValid_o [*];
        DoutValid_o and DoutStop_o};
 
      -- Start & stop flag have to be exclusive
@@ -316,15 +329,37 @@ begin
      JOB_ACK_DOUT_STABLE : assert always
        DoutValid_o and not DoutAccept_i -> next (Dout_o = s_job_ack.Data until_ DoutAccept_i);
 
---    READ_DATA : assert always
---      (DoutValid_o and not DoutStart_o and not DoutStop_o) ->
---      (Dout_o = s_register(to_integer(unsigned(a_addr))));
+    -- Data from selected address has to be read
+    READ_DATA : assert always
+      DoutValid_o and not DoutStart_o and not DoutStop_o and s_addr <= 7
+      ->
+      Dout_o = s_register(s_addr);
+
+    -- 0 has to be read when invalid address is given
+    READ_DATA_INV_ADDR : assert always
+      DoutValid_o and not DoutStart_o and not DoutStop_o and s_addr > 7
+      ->
+      Dout_o = x"00";
+
+    -- Register has to be written at given address with given data
+    -- when correct job req write occurs
+    WRITE_DATA : assert always
+      -- Job req header cycle
+      {s_fsm_state = GET_HEADER and DinValid_i = '1' and DinStart_i = '1' and
+       Din_i(3 downto 0) = x"1" and unsigned(Din_i(7 downto 4)) <= 7 and DinStop_i = '0';
+       -- Job req data / footer cycle
+       not DinValid_i [*];
+       DinValid_i and not DinStart_i and DinStop_i and not DinAccept_o [*];
+       DinValid_i and not DinStart_i and DinStop_i and DinAccept_o}
+      |=>
+      {s_register(s_addr) = s_job_req.Data};
 
 
     -- FUNCTIONAL COVERAGE
 
     FOOTER_VALID : cover {DoutValid_o = '1' and DoutStop_o = '1' and Dout_o = 8x"0"};
     FOOTER_ERR   : cover {DoutValid_o = '1' and DoutStop_o = '1' and Dout_o = 8x"1"};
+
 
   end generate FormalG;
 
