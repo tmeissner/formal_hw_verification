@@ -4,7 +4,7 @@ bmc
 prove
 
 [options]
-depth 20
+depth 25
 cover: mode cover
 bmc: mode bmc
 prove: mode prove
@@ -16,7 +16,7 @@ prove: abc pdr
 
 [script]
 ghdl --std=08 -fpsl vai_reg.vhd -e vai_reg
-prep -top vai_reg
+prep -auto-top
 
 [files]
 vai_reg.vhd

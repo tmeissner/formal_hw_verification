@@ -112,7 +112,7 @@ begin
             DinAccept_o <= '0';
             if (DinStop_i = '1') then
               if (unsigned(a_addr) <= 7) then
-                 s_register(to_integer(unsigned(a_addr))) <= Din_i;
+                s_register(to_integer(unsigned(a_addr))) <= Din_i;
               else
                 s_error <= true;
               end if;

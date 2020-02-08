@@ -1,15 +1,17 @@
+DUT := vai_reg
+
 .PHONY: cover prove all clean
 
 all: cover bmc prove
 
-cover: vai_reg.vhd symbiyosys.sby
-	sby --yosys "yosys -m ghdl" -f -d work/vai_reg-$@ symbiyosys.sby $@
+cover: ${DUT}.vhd symbiyosys.sby
+	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
 
-bmc: vai_reg.vhd symbiyosys.sby
-	sby --yosys "yosys -m ghdl" -f -d work/vai_reg-$@ symbiyosys.sby $@
+bmc: ${DUT}.vhd symbiyosys.sby
+	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
 
-prove: vai_reg.vhd symbiyosys.sby
-	sby --yosys "yosys -m ghdl" -f -d work/vai_reg-$@ symbiyosys.sby $@
+prove: ${DUT}.vhd symbiyosys.sby
+	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
 
 clean:
 	rm -rf work
