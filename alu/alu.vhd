@@ -6,7 +6,8 @@ use ieee.numeric_std.all;
 
 entity alu is
   generic (
-    Width : natural := 8
+    Width  : natural := 8;
+    Formal : boolean := true
   );
   port (
     Reset_n_i  : in  std_logic;
@@ -24,7 +25,7 @@ end entity alu;
 architecture rtl of alu is
 
 
-  subtype t_opc is std_logic_vector(Opc_i'length-1 downto 0);
+  subtype t_opc is std_logic_vector(Opc_i'range);
 
   constant c_add : t_opc := "00";
   constant c_sub : t_opc := "01";
@@ -36,24 +37,61 @@ begin
 
 
   process (Reset_n_i, Clk_i) is
+    variable v_result : std_logic_vector(Width downto 0);
   begin
     if (Reset_n_i = '0') then
-      Dout_o <= (others => '0');
+      v_result   := (others => '0');
+      Dout_o     <= (others => '0');
+      OverFlow_o <= '0';
     elsif (rising_edge(Clk_i)) then
       case Opc_i is
-        when c_add => (OverFlow_o, Dout_o) <=
-          std_logic_vector(resize(unsigned(DinA_i), Dout_o'length+1) +
-                           resize(unsigned(DinB_i), Dout_o'length+1));
-        when c_sub => (OverFlow_o, Dout_o) <=
-          std_logic_vector(resize(unsigned(DinA_i), Dout_o'length+1) -
-                           resize(unsigned(DinB_i), Dout_o'length+1));
-        when c_and => Dout_o <= DinA_i and DinB_i;
-        when c_or  => Dout_o <= DinA_i or DinB_i;
+        when c_add =>
+          v_result := std_logic_vector(unsigned('0' & DinA_i) +
+                                       unsigned('0' & DinB_i));
+        when c_sub =>
+          v_result := std_logic_vector(unsigned('0' & DinA_i) -
+                                       unsigned('0' & DinB_i));
+        when c_and => v_result := DinA_i and DinB_i;
+        when c_or  => v_result := DinA_i or  DinB_i;
         when others => null;
       end case;
+      Dout_o     <= v_result(Width-1 downto 0);
+      OverFlow_o <= v_result(Width);
     end if;
   end process;
 
 
-end architecture rtl;
+  FormalG : if Formal generate
 
+    signal s_dina : std_logic_vector(DinA_i'range);
+    signal s_dinb : std_logic_vector(DinB_i'range);
+
+  begin
+
+    -- VHDL helper logic
+    process is
+    begin
+      wait until rising_edge(Clk_i);
+      s_dina <= DinA_i;
+      s_dinb <= DinB_i;
+    end process;
+
+
+    default clock is rising_edge(Clk_i);
+
+    AFTER_RESET : assert always
+      not Reset_n_i -> Dout_o = x"00" and OverFlow_o = '0';
+
+
+    ADD_OP : assert Reset_n_i and Opc_i = c_add -> next unsigned(Dout_o) = unsigned(s_dina) + unsigned(s_dinb) abort not Reset_n_i;
+
+    SUB_OP : assert Reset_n_i and Opc_i = c_sub -> next unsigned(Dout_o) = unsigned(s_dina) - unsigned(s_dinb) abort not Reset_n_i;
+
+    AND_OP : assert Reset_n_i and Opc_i = c_and -> next Dout_o = (s_dina and s_dinb) abort not Reset_n_i;
+
+    OR_OP :  assert Reset_n_i and Opc_i = c_or  -> next Dout_o = (s_dina or s_dinb) abort not Reset_n_i;
+
+  end generate FormalG;
+
+
+end architecture rtl;
