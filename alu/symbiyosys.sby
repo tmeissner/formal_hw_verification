@@ -12,10 +12,10 @@ prove: mode prove
 [engines]
 cover: smtbmc z3
 bmc: abc bmc3
-prove: abc pdr
+prove: smtbmc z3
 
 [script]
-ghdl --std=08 -fpsl alu.vhd -e alu
+ghdl --std=08 -gWidth=16 -gFormal=true alu.vhd -e alu
 prep -auto-top
 
 [files]
