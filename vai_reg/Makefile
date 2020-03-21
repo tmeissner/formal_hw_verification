@@ -1,16 +1,10 @@
 DUT := vai_reg
 
-.PHONY: cover prove all clean
+.PHONY: cover bmc prove all clean
 
 all: cover bmc prove
 
-cover: ${DUT}.vhd symbiyosys.sby
-	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
-
-bmc: ${DUT}.vhd symbiyosys.sby
-	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
-
-prove: ${DUT}.vhd symbiyosys.sby
+cover bmc prove: ${DUT}.vhd symbiyosys.sby
 	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
 
 clean:
