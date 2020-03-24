@@ -1,0 +1,22 @@
+[tasks]
+cover
+bmc
+prove
+
+[options]
+depth 25
+cover: mode cover
+bmc: mode bmc
+prove: mode prove
+
+[engines]
+cover: smtbmc z3
+bmc: smtbmc z3
+prove: smtbmc z3
+
+[script]
+ghdl --std=08 -fpsl counter.vhd -e counter
+prep -auto-top
+
+[files]
+counter.vhd

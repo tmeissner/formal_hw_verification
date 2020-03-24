@@ -1,7 +1,11 @@
-.PHONY: counter
-counter: counter.vhd counter_t.sv counter_f.sby
-	sby -f -d work counter_f.sby
+DUT := counter
 
-.PHONY: clean
+.PHONY: cover bmc prove all clean
+
+all: cover bmc prove
+
+cover bmc prove: ${DUT}.vhd symbiyosys.sby
+	sby --yosys "yosys -m ghdl" -f -d work/${DUT}-$@ symbiyosys.sby $@
+
 clean:
 	rm -rf work
