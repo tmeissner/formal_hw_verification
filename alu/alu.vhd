@@ -51,8 +51,8 @@ begin
         when c_sub =>
           v_result := std_logic_vector(unsigned('0' & DinA_i) -
                                        unsigned('0' & DinB_i));
-        when c_and => v_result := DinA_i and DinB_i;
-        when c_or  => v_result := DinA_i or  DinB_i;
+        when c_and => v_result := ('0', DinA_i and DinB_i);
+        when c_or  => v_result := ('0', DinA_i or  DinB_i);
         when others => null;
       end case;
       Dout_o     <= v_result(Width-1 downto 0);
@@ -62,9 +62,6 @@ begin
 
 
   FormalG : if Formal generate
-
-    signal s_dina : std_logic_vector(DinA_i'range);
-    signal s_dinb : std_logic_vector(DinB_i'range);
 
     function max(a, b: std_logic_vector) return unsigned is
     begin
@@ -77,42 +74,36 @@ begin
 
   begin
 
-    -- VHDL helper logic
-    process is
-    begin
-      wait until rising_edge(Clk_i);
-      s_dina <= DinA_i;
-      s_dinb <= DinB_i;
-    end process;
-
-
     default clock is rising_edge(Clk_i);
+
+    -- Initial reset
+    INITIAL_RESET : restrict {not Reset_n_i[*2]; Reset_n_i[+]}[*1];
 
     AFTER_RESET : assert always
       not Reset_n_i -> Dout_o = (Dout_o'range => '0') and OverFlow_o = '0';
 
-    ADD_OP : assert Reset_n_i and Opc_i = c_add ->
-      next unsigned(Dout_o) = unsigned(s_dina) + unsigned(s_dinb) abort not Reset_n_i;
+    ADD_OP : assert always Reset_n_i and Opc_i = c_add ->
+      next unsigned(Dout_o) = unsigned(prev(DinA_i)) + unsigned(prev(DinB_i)) abort not Reset_n_i;
 
-    SUB_OP : assert Reset_n_i and Opc_i = c_sub ->
-      next unsigned(Dout_o) = unsigned(s_dina) - unsigned(s_dinb) abort not Reset_n_i;
+    SUB_OP : assert always Reset_n_i and Opc_i = c_sub ->
+      next unsigned(Dout_o) = unsigned(prev(DinA_i)) - unsigned(prev(DinB_i)) abort not Reset_n_i;
 
-    AND_OP : assert Reset_n_i and Opc_i = c_and ->
-      next Dout_o = (s_dina and s_dinb) abort not Reset_n_i;
+    AND_OP : assert always Reset_n_i and Opc_i = c_and ->
+      next Dout_o = (prev(DinA_i) and prev(DinB_i)) abort not Reset_n_i;
 
-    OR_OP :  assert Reset_n_i and Opc_i = c_or ->
-      next Dout_o = (s_dina or s_dinb) abort not Reset_n_i;
+    OR_OP :  assert always Reset_n_i and Opc_i = c_or ->
+      next Dout_o = (prev(DinA_i) or prev(DinB_i)) abort not Reset_n_i;
 
-    OVERFLOW_ADD : assert Reset_n_i and Opc_i = c_add and (unsigned(DinA_i) + unsigned(DinB_i)) < max(DinA_i, DinB_i) ->
+    OVERFLOW_ADD : assert always Reset_n_i and Opc_i = c_add and (unsigned(DinA_i) + unsigned(DinB_i)) < max(DinA_i, DinB_i) ->
       next OverFlow_o abort not Reset_n_i;
 
-    NOT_OVERFLOW_ADD : assert Reset_n_i and Opc_i = c_add and (unsigned(DinA_i) + unsigned(DinB_i)) >= max(DinA_i, DinB_i) ->
+    NOT_OVERFLOW_ADD : assert always Reset_n_i and Opc_i = c_add and (unsigned(DinA_i) + unsigned(DinB_i)) >= max(DinA_i, DinB_i) ->
       next not OverFlow_o abort not Reset_n_i;
 
-    OVERFLOW_SUB : assert Reset_n_i and Opc_i = c_sub and (unsigned(DinA_i) - unsigned(DinB_i)) > unsigned(DinA_i) ->
+    OVERFLOW_SUB : assert always Reset_n_i and Opc_i = c_sub and (unsigned(DinA_i) - unsigned(DinB_i)) > unsigned(DinA_i) ->
       next OverFlow_o abort not Reset_n_i;
 
-    NOT_OVERFLOW_SUB : assert Reset_n_i and Opc_i = c_sub and (unsigned(DinA_i) - unsigned(DinB_i)) <= unsigned(DinA_i) ->
+    NOT_OVERFLOW_SUB : assert always Reset_n_i and Opc_i = c_sub and (unsigned(DinA_i) - unsigned(DinB_i)) <= unsigned(DinA_i) ->
       next not OverFlow_o abort not Reset_n_i;
 
   end generate FormalG;

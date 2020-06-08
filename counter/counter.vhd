@@ -39,30 +39,19 @@ begin
 
   FormalG : if Formal generate
 
-    signal s_data : unsigned(Data_o'range);
-
-  begin
-
-    -- VHDL helper logic
-    process is
-    begin
-      wait until rising_edge(Clk_i);
-      s_data <= unsigned(Data_o);
-    end process;
-
     default clock is rising_edge(Clk_i);
 
     -- Initial reset
-    INITIAL_RESET : restrict {Reset_n_i = '0'[*2]; Reset_n_i = '1'[+]}[*1];
+    INITIAL_RESET : restrict {not Reset_n_i[*2]; Reset_n_i[+]}[*1];
 
     AFTER_RESET : assert always
       not Reset_n_i -> Data_o = (Data_o'range => '0');
 
     COUNT_UP : assert always
-      Reset_n_i and unsigned(Data_o) < to_unsigned(EndVal, 32) -> next unsigned(Data_o) = s_data + 1;
+      Reset_n_i and unsigned(Data_o) < to_unsigned(EndVal, 32) -> next unsigned(Data_o) = unsigned(prev(Data_o)) + 1;
 
     END_VALUE : assert always
-      unsigned(Data_o) = to_unsigned(EndVal, 32) -> next unsigned(Data_o) = s_data;
+      unsigned(Data_o) = to_unsigned(EndVal, 32) -> next Data_o = prev(Data_o);
 
     VALID_RANGE : assert always
       unsigned(Data_o) >= to_unsigned(InitVal, 32) and
