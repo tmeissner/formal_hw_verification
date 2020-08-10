@@ -17,5 +17,8 @@ A simple ALU design in VHDL. The formal checks contain various simple properties
 ### counter
 A simple counter design in VHDL. The testbench contains various simple properties used by assert & cover directives which are proved with the SymbiYosys tool.
 
+### fifo
+A simple synchronous FIFO with various checks for write/read pointers, data and flags.
+
 ### vai_reg
 A simple register file with VAI (valid-accept-interface) which serves as test design to try formal verification of FSMs.
