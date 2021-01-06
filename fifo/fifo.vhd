@@ -108,10 +108,13 @@ begin
     default clock is rising_edge(Clk_i);
 
     -- Initial reset
-    restrict {not Reset_n_i[*3]; Reset_n_i[+]}[*1];
+    RESTRICT_RESET : restrict
+      {not Reset_n_i[*3]; Reset_n_i[+]}[*1];
 
     -- Inputs are low during reset for simplicity
-    assume always not Reset_n_i -> not Wen_i and not Ren_i;
+    ASSUME_INPUTS_DURING_RESET : assume always
+      not Reset_n_i ->
+      not Wen_i and not Ren_i;
 
 
     -- Asynchronous (unclocked) Reset asserts
