@@ -72,8 +72,14 @@ begin
 
     default clock is rising_edge(Clk_i);
 
+    -- Initial reset
+    RESTRICT_RESET : restrict
+      {not Reset_n_i[*3]; Reset_n_i[+]}[*1];
+
     -- Inputs are low during reset for simplicity
-    vai_fifo_reset_a : assume always not Reset_n_i -> not Valid_i and not Accept_i;
+    ASSUME_INPUTS_DURING_RESET : assume always
+      not Reset_n_i ->
+      not Valid_i and not Accept_i;
 
   end generate FormalG;
 

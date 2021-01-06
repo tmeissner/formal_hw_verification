@@ -11,15 +11,13 @@ prove: mode prove
 
 [engines]
 cover: smtbmc z3
-bmc: smtbmc z3
-#abc bmc3
+bmc: abc bmc3
 prove: abc pdr
 
 [script]
 ghdl --std=08 -gFormal=true -gDepth=16 -gWidth=16 fifo.vhd vai_fifo.vhd -e vai_fifo
 prep -top vai_fifo
-#chformal -assume -remove vai_fifo/*
-chformal -assume -remove vai_fifo/i_fifo
+chformal -assume2assert vai_fifo/i_fifo %M
 
 [files]
 ../fifo/fifo.vhd

@@ -21,7 +21,7 @@ A simple counter design in VHDL. The testbench contains various simple propertie
 A simple synchronous FIFO with various checks for write/read pointers, data and flags.
 
 ### vai_fifo
-A simple FIFO with valid-accept interface. Consists of the fifo unit and some glue logic doing fifo<->vai interface conversion.
+A simple FIFO with valid-accept-interface. Consists of fifo as sub-unit and some glue logic doing fifo<->vai interface conversion. This design serves as an example how to verify designs with sub-units containing formal checks.
 
 ### vai_reg
 A simple register file with VAI (valid-accept-interface) which serves as test design to try formal verification of FSMs.
