@@ -1,0 +1,5 @@
+alu \
+counter \
+fifo \
+vai_fifo \
+vai_reg
