@@ -1,3 +1,5 @@
+[![](https://img.shields.io/github/workflow/status/tmeissner/formal_hw_verification/Test/main?longCache=true&style=flat-square&label=Test&logo=GitHub%20Actions&logoColor=fff)](https://github.com/tmeissner/formal_hw_verification/actions?query=workflow%3ATest)
+
 The original repository is located on my own git-server at [https://git.goodcleanfun.de/tmeissner/formal_hw_verification](https://git.goodcleanfun.de/tmeissner/formal_hw_verification)
 
 It is mirrored to github with every push, so both should be in sync.

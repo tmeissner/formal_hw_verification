@@ -1,4 +1,4 @@
-DESIGNS := $(file < tests.txt)
+DESIGNS := $(shell cat tests.txt)
 
 .PHONY: ${DESIGNS} all clean
 
