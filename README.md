@@ -13,6 +13,8 @@ All stuff in the master branch uses [ghdl-yosys-plugin](https://github.com/ghdl/
 
 Some examples in the [verific branch](https://github.com/tmeissner/formal_hw_verification/tree/verific) use the commercial VHDL/SystemVerilog frontend plugin by Verific which isn't free SW and not included in the free Yosys version. See on the [Symbiotic EDA website](https://www.symbioticeda.com) for more information.
 
+You can use the `hdlc/formal:all` docker image provided by the [hdl containers project](https://hdl.github.io/containers/) (recommended). Or you build a docker image on your own machine using my [Dockerfiles for SymbiYosys & GHDL](https://github.com/tmeissner/Dockerfiles). With both you have the latest tool versions available.
+
 ### alu
 A simple ALU design in VHDL. The formal checks contain various simple properties used by assert & cover directives which are proved with the SymbiYosys tool.
 
