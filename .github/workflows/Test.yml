@@ -1,0 +1,45 @@
+name: Test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+
+
+  Matrix:
+    runs-on: ubuntu-latest
+    name: '🧾 Generate Test matrix'
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+
+    - name: '🧰 Checkout'
+      uses: actions/checkout@v2
+
+    - id: generate
+      name: '🧾 generate_matrix.sh'
+      run: ./.github/generate_matrix.sh
+
+
+  Test:
+    needs: Matrix
+    runs-on: ubuntu-20.04
+    strategy:
+      fail-fast: false
+      matrix:
+        design: ${{ fromJson(needs.Matrix.outputs.matrix) }}
+    name: '🛳️ Test · ${{ matrix.design }}'
+    steps:
+
+    - name: '🧰 Checkout'
+      uses: actions/checkout@v1
+      with:
+        submodules: recursive
+
+    - name: '🛳️ Execute make ${{ matrix.design }} in hdlc/formal:all'
+      uses: docker://hdlc/formal:all
+      with:
+        args: make ${{ matrix.design }}
+      env:
+        BUILD_NAME: ACCEPTANCE
