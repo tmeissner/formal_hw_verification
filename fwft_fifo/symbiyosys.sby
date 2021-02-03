@@ -15,19 +15,16 @@ bmc: abc bmc3
 prove: abc pdr
 
 [script]
-ghdl --std=08 -gFormal=true -gDepth=16 -gWidth=16 fifo.vhd fwft_fifo.vhd vai_fifo.vhd -e vai_fifo
-prep -top vai_fifo
+ghdl --std=08 -gFormal=true -gDepth=16 -gWidth=16 fifo.vhd fwft_fifo.vhd -e fwft_fifo
+prep -top fwft_fifo
 
 # Convert all assumes to asserts in sub-units
-chformal -assume2assert vai_fifo/* %M
+chformal -assume2assert fwft_fifo/* %M
 
 # Remove selected covers in i_fifo sub-unit as they cannot be reached
 chformal -cover -remove */formalg.read_pnt_stable_when_empty.cover
 chformal -cover -remove */formalg.rerror.cover
-chformal -cover -remove */formalg.werror.cover
-chformal -cover -remove */formalg.write_pnt_stable_when_full.cover
 
 [files]
 ../fifo/fifo.vhd
-../fwft_fifo/fwft_fifo.vhd
-vai_fifo.vhd
+fwft_fifo.vhd

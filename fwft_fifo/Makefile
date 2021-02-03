@@ -1,5 +1,5 @@
-DUT := vai_fifo
-SRC := ../fifo/fifo.vhd ../fwft_fifo/fwft_fifo.vhd ${DUT}.vhd
+DUT := fwft_fifo
+SRC := ../fifo/fifo.vhd ${DUT}.vhd
 
 .PHONY: cover bmc prove synth all clean
 

@@ -1,5 +1,6 @@
 alu
 counter
 fifo
+fwft_fifo
 vai_fifo
 vai_reg

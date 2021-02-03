@@ -4,7 +4,7 @@ use ieee.numeric_std.all;
 
 
 
-entity vai_fifo is
+entity fwft_fifo is
   generic (
     Formal : boolean := true;
     Depth  : positive := 16;
@@ -14,31 +14,30 @@ entity vai_fifo is
     Reset_n_i    : in  std_logic;
     Clk_i        : in  std_logic;
     -- write
-    Valid_i      : in  std_logic;
-    Accept_o     : out std_logic;
+    Wen_i        : in  std_logic;
     Din_i        : in  std_logic_vector(Width-1 downto 0);
+    Full_o       : out std_logic;
+    Werror_o     : out std_logic;
     -- read
-    Valid_o      : out std_logic;
-    Accept_i     : in  std_logic;
-    Dout_o       : out std_logic_vector(Width-1 downto 0)
+    Ren_i        : in  std_logic;
+    Dout_o       : out std_logic_vector(Width-1 downto 0);
+    Empty_o      : out std_logic;
+    Rerror_o     : out std_logic
   );
-end entity vai_fifo;
+end entity fwft_fifo;
 
 
-architecture rtl of vai_fifo is
+architecture rtl of fwft_fifo is
 
 
-  signal s_wen : std_logic;
-  signal s_ren : std_logic;
-
-  signal s_full  : std_logic;
   signal s_empty : std_logic;
+  signal s_ren   : std_logic;
 
 
 begin
 
 
-  i_fwft_fifo : entity work.fwft_fifo
+  i_fifo : entity work.fifo
   generic map (
     Formal => Formal,
     Depth  => Depth,
@@ -48,10 +47,10 @@ begin
     Reset_n_i    => Reset_n_i,
     Clk_i        => Clk_i,
     -- write
-    Wen_i        => s_wen,
+    Wen_i        => Wen_i,
     Din_i        => Din_i,
-    Full_o       => s_full,
-    Werror_o     => open,
+    Full_o       => Full_o,
+    Werror_o     => Werror_o,
     -- read
     Ren_i        => s_ren,
     Dout_o       => Dout_o,
@@ -60,12 +59,24 @@ begin
   );
 
 
-  s_wen <= Valid_i and not s_full;
-  s_ren <= Accept_i and not s_empty;
 
-  Accept_o <= not s_full;
-  Valid_o  <= not s_empty;
+  s_ren <= not s_empty and (Empty_o or Ren_i);
 
+
+  ReadFlagsP : process (Reset_n_i, Clk_i) is
+  begin
+    if (Reset_n_i = '0') then
+      Empty_o  <= '1';
+      Rerror_o <= '0';
+    elsif (rising_edge(Clk_i)) then
+      Rerror_o <= Ren_i and Empty_o;
+      if (s_ren = '1') then
+        Empty_o <= '0';
+      elsif (Ren_i = '1') then
+        Empty_o <= '1';
+      end if;
+    end if;
+  end process ReadFlagsP;
 
 
   FormalG : if Formal generate
@@ -79,7 +90,7 @@ begin
     -- Inputs are low during reset for simplicity
     ASSUME_INPUTS_DURING_RESET : assume always
       not Reset_n_i ->
-      not Valid_i and not Accept_i;
+      not Wen_i and not Ren_i;
 
   end generate FormalG;
 
