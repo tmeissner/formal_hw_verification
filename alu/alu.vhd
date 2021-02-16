@@ -79,8 +79,14 @@ begin
     -- Initial reset
     INITIAL_RESET : restrict {not Reset_n_i[*2]; Reset_n_i[+]}[*1];
 
-    AFTER_RESET : assert always
-      not Reset_n_i -> Dout_o = (Dout_o'range => '0') and OverFlow_o = '0';
+    -- Asynchronous (unclocked) Reset asserts
+    AFTER_RESET : process (all) is
+    begin
+      if (not Reset_n_i) then
+        RESET_DOUT : assert Dout_o = (Dout_o'range => '0');
+        RESET_OVFL : assert OverFlow_o = '0';
+      end if;
+    end process AFTER_RESET;
 
     ADD_OP : assert always Reset_n_i and Opc_i = c_add ->
       next unsigned(Dout_o) = unsigned(prev(DinA_i)) + unsigned(prev(DinB_i)) abort not Reset_n_i;

@@ -44,18 +44,27 @@ begin
     -- Initial reset
     INITIAL_RESET : restrict {not Reset_n_i[*2]; Reset_n_i[+]}[*1];
 
-    AFTER_RESET : assert always
-      not Reset_n_i -> Data_o = (Data_o'range => '0');
+    -- Asynchronous (unclocked) Reset asserts
+    AFTER_RESET : process (all) is
+    begin
+      if (not Reset_n_i) then
+        RESET_DATA : assert unsigned(Data_o) = to_unsigned(InitVal, Data_o'length);
+      end if;
+    end process AFTER_RESET;
 
     COUNT_UP : assert always
-      Reset_n_i and unsigned(Data_o) < to_unsigned(EndVal, 32) -> next unsigned(Data_o) = unsigned(prev(Data_o)) + 1;
+      Reset_n_i and unsigned(Data_o) < to_unsigned(EndVal, Data_o'length)
+      ->
+      next unsigned(Data_o) = unsigned(prev(Data_o)) + 1;
 
     END_VALUE : assert always
-      unsigned(Data_o) = to_unsigned(EndVal, 32) -> next Data_o = prev(Data_o);
+      unsigned(Data_o) = to_unsigned(EndVal, Data_o'length)
+      ->
+      next Data_o = prev(Data_o);
 
     VALID_RANGE : assert always
-      unsigned(Data_o) >= to_unsigned(InitVal, 32) and
-      unsigned(Data_o) <= to_unsigned(EndVal, 32);
+      unsigned(Data_o) >= to_unsigned(InitVal, Data_o'length) and
+      unsigned(Data_o) <= to_unsigned(EndVal, Data_o'length);
 
   end generate FormalG;
 

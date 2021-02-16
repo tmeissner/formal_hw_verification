@@ -200,6 +200,14 @@ begin
 
     -- CONSTRAINTS
 
+    -- Inputs are low during reset for simplicity
+    ASSUME_INPUTS_DURING_RESET : assume always
+      not Reset_n_i ->
+      not DinValid_i and
+      not DinStart_i and
+      not DinStop_i  and
+      not DoutAccept_i;
+
     -- Valid stable until accepted
     JOB_REQ_VALID_STABLE : assume always
       DinValid_i and not DinAccept_o -> next (stable(DinValid_i) until_ DinAccept_o);
@@ -219,16 +227,18 @@ begin
 
     -- ASSERTIONS
 
-    -- Reset values
-    AFTER_RESET : assert always
-      not Reset_n_i
-      ->
-      s_fsm_state = IDLE and
-      not DinAccept_o and
-      not DoutStart_o and
-      not DoutStop_o  and
-      not DoutValid_o and
-      s_register = (0 to 7 => x"00");
+    -- Asynchronous (unclocked) Reset asserts
+    AFTER_RESET : process (all) is
+    begin
+      if (not Reset_n_i) then
+        RESET_STATE  : assert s_fsm_state = IDLE;
+        RESET_ACCEPT : assert DinAccept_o = '0';
+        RESET_START  : assert DoutStart_o = '0';
+        RESET_STOP   : assert DoutStop_o = '0';
+        RESET_VALID  : assert DoutValid_o = '0';
+        RESET_REG    : assert s_register = (0 to 7 => x"00");
+      end if;
+    end process AFTER_RESET;
 
     -- FSM states in valid range
     FSM_STATES_VALID : assert always

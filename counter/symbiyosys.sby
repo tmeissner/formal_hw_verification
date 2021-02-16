@@ -15,7 +15,7 @@ bmc: smtbmc z3
 prove: smtbmc z3
 
 [script]
-ghdl --std=08 -fpsl counter.vhd -e counter
+ghdl --std=08 -gInitVal=23 -gEndVal=42 -fpsl counter.vhd -e counter
 prep -auto-top
 
 [files]
