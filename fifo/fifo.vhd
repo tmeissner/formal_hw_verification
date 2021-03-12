@@ -37,6 +37,9 @@ architecture rtl of fifo is
   type t_fifo_mem is array (t_fifo_pnt'low to t_fifo_pnt'high) of std_logic_vector(Din_i'range);
   signal s_fifo_mem : t_fifo_mem;
 
+  signal s_almost_full  : boolean;
+  signal s_almost_empty : boolean;
+
   function incr_pnt (data : t_fifo_pnt) return t_fifo_pnt is
   begin
     if (data = t_fifo_mem'high) then
@@ -48,6 +51,12 @@ architecture rtl of fifo is
 
 begin
 
+
+  s_almost_full <= (s_write_pnt = s_read_pnt - 1) or
+                   (s_write_pnt = t_fifo_mem'high and s_read_pnt = t_fifo_mem'low);
+
+  s_almost_empty <= (s_read_pnt = s_write_pnt - 1) or
+                    (s_read_pnt = t_fifo_mem'high and s_write_pnt = t_fifo_mem'low);
 
   WriteP : process (Reset_n_i, Clk_i) is
   begin
@@ -85,16 +94,14 @@ begin
       Full_o  <= '0';
       Empty_o <= '1';
     elsif (rising_edge(Clk_i)) then
-      if (Wen_i = '1' and Ren_i = '0') then
-        if ((s_write_pnt = s_read_pnt - 1) or
-            (s_write_pnt = t_fifo_mem'high and s_read_pnt = t_fifo_mem'low)) then
+      if (Wen_i = '1') then
+        if (Ren_i = '0' and s_almost_full) then
           Full_o <= '1';
         end if;
         Empty_o <= '0';
       end if;
-      if (Ren_i = '1' and Wen_i = '0') then
-        if ((s_read_pnt = s_write_pnt - 1) or
-            (s_read_pnt = t_fifo_mem'high and s_write_pnt = t_fifo_mem'low)) then
+      if (Ren_i = '1') then
+        if (Wen_i = '0' and s_almost_empty) then
           Empty_o <= '1';
         end if;
         Full_o <= '0';
