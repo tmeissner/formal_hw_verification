@@ -112,7 +112,17 @@ begin
 
   FormalG : if Formal generate
 
+    attribute anyconst : boolean;
+    signal s_data : std_logic_vector(Width-1 downto 0);
+    attribute anyconst of s_data : signal is true;
+
+    signal s_cnt : natural range 0 to Depth;
+
+  begin
+
+
     default clock is rising_edge(Clk_i);
+
 
     -- Initial reset
     RESTRICT_RESET : restrict
@@ -154,9 +164,9 @@ begin
       (s_write_pnt = s_read_pnt - 1 or s_write_pnt = t_fifo_pnt'high and s_read_pnt = t_fifo_pnt'low) ->
       next Full_o;
 
-    -- Not full when read and no write
+    -- Not full when read
     NOT_FULL : assert always
-      not Wen_i and Ren_i ->
+      Ren_i ->
       next not Full_o;
 
     -- Empty when read and no write and read pointer ran up to write pointer
@@ -165,9 +175,9 @@ begin
       (s_read_pnt = s_write_pnt - 1 or s_read_pnt = t_fifo_pnt'high and s_write_pnt = t_fifo_pnt'low) ->
       next Empty_o;
 
-    -- Not empty when write and no read
+    -- Not empty when write
     NOT_EMPTY : assert always
-      Wen_i and not Ren_i ->
+      Wen_i ->
       next not Empty_o;
 
     -- Write error when writing into full fifo
@@ -175,9 +185,9 @@ begin
       Wen_i and Full_o ->
         next Werror_o;
 
-    -- No write error when writing into not full fifo
+    -- No write error when fifo not full
     NO_WERROR : assert always
-      Wen_i and not Full_o ->
+      not Full_o ->
         next not Werror_o;
 
     -- Read error when reading from empty fifo
@@ -185,9 +195,9 @@ begin
       Ren_i and Empty_o ->
       next Rerror_o;
 
-    -- No read error when reading from not empty fifo
+    -- No read error when fifo not empty
     NO_RERROR : assert always
-      Ren_i and not Empty_o ->
+      not Empty_o ->
       next not Rerror_o;
 
     -- Write pointer increment when writing into not full fifo
@@ -223,6 +233,55 @@ begin
     DOUT_VALID : assert always
       Ren_i and not Empty_o ->
       next Dout_o = s_fifo_mem(s_read_pnt - 1);
+
+    -- Fillstate calculation
+    process (Clk_i) is
+    begin
+      if Reset_n_i = '0' then
+        s_cnt <= 0;
+      elsif rising_edge(Clk_i) then
+        if Wen_i = '1' and Full_o = '0' and (Ren_i = '0' or Empty_o = '1') then
+          s_cnt <= s_cnt + 1;
+        elsif Ren_i = '1' and Empty_o = '0' and (Wen_i = '0' or Full_o = '1') then
+          s_cnt <= s_cnt - 1;
+        end if;
+      end if;
+    end process;
+
+    -- Data flow checks
+    -- GHDL only allows numerals in repetition operators
+    -- so we have to use separate checks for each fill state 
+    DATA_FLOW_0 : assert always
+      {{s_cnt = 0 and Wen_i = '1' and Din_i = s_data} ; {Ren_i[->1]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_1 : assert always
+      {{s_cnt = 1 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->2]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_2 : assert always
+      {{s_cnt = 2 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->3]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_3 : assert always
+      {{s_cnt = 3 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->4]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_4 : assert always
+      {{s_cnt = 4 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->5]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_5 : assert always
+      {{s_cnt = 5 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->6]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_6 : assert always
+      {{s_cnt = 6 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->7]}}
+      |=> {Dout_o = s_data};
+
+    DATA_FLOW_7 : assert always
+      {{s_cnt = 7 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->8]}}
+      |=> {Dout_o = s_data};
 
   end generate FormalG;
 

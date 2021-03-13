@@ -4,7 +4,7 @@ bmc
 prove
 
 [options]
-depth 25
+depth 20
 cover: mode cover
 bmc: mode bmc
 prove: mode prove
@@ -15,7 +15,7 @@ bmc: abc bmc3
 prove: abc pdr
 
 [script]
-ghdl --std=08 -gFormal=true -gDepth=16 -gWidth=16 fifo.vhd fwft_fifo.vhd -e fwft_fifo
+ghdl --std=08 -gFormal=true -gDepth=8 -gWidth=16 fifo.vhd fwft_fifo.vhd -e fwft_fifo
 prep -top fwft_fifo
 
 # Convert all assumes to asserts in sub-units
