@@ -296,7 +296,7 @@ begin
       GEN : if i = 0 generate
 
         DATA_FLOW_GEN : assert always
-          {{s_cnt = i and Wen_i = '1' and Din_i = s_data} ; {Ren_i}}
+          {{s_cnt = i and Wen_i = '1' and Din_i = s_data} ; {not Ren_i[*]; Ren_i}}
           |=> {Dout_o = s_data};
 
       else generate
