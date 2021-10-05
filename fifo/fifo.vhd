@@ -283,6 +283,49 @@ begin
       {{s_cnt = 7 and Wen_i = '1' and Din_i = s_data} : {Ren_i[->8]}}
       |=> {Dout_o = s_data};
 
+
+    -- An alternative for GHDL: Replacing the [->] goto operator
+    -- by counting Ren_i starting when s_data is written into fifo.
+    -- The properties have to be slightly modified only.
+    -- Sadly proving these needs much more (engine dependend) time than
+    -- the separate checks above. I assume the counters are the reason.
+    gen_data_checks : for i in 0 to Depth-1 generate
+
+    begin
+
+      GEN : if i = 0 generate
+
+        DATA_FLOW_GEN : assert always
+          {{s_cnt = i and Wen_i = '1' and Din_i = s_data} ; {Ren_i}}
+          |=> {Dout_o = s_data};
+
+      else generate
+
+        signal s_ren_cnt : integer range -1 to i+1 := -1;
+
+      begin
+
+        process (Reset_n_i, Clk_i) is
+        begin
+          if not Reset_n_i then
+            s_ren_cnt <= -1;
+          elsif (rising_edge(Clk_i)) then
+            if s_cnt = i and Wen_i = '1' and Din_i = s_data then
+              s_ren_cnt <= 1 when Ren_i else 0;
+            else
+              s_ren_cnt <= s_ren_cnt + 1 when Ren_i = '1' and s_ren_cnt >= 0;
+            end if;
+          end if;
+        end process;
+
+        DATA_FLOW_GEN : assert always
+          {{s_cnt = i and Wen_i = '1' and Din_i = s_data} : {Ren_i[*]; s_ren_cnt = i+1}}
+          |-> {Dout_o = s_data};
+
+      end generate GEN;
+
+    end generate gen_data_checks;
+
   end generate FormalG;
 
 
