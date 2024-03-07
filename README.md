@@ -1,4 +1,4 @@
-![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/tmeissner/formal_hw_verification/Test.yml?style=flat-square&logo=Github%20Actions&logoColor=fff&label=Test)
+[![](https://img.shields.io/github/actions/workflow/status/tmeissner/formal_hw_verification/Test.yml?style=flat-square&logo=Github%20Actions&logoColor=fff&label=Test)](https://github.com/tmeissner/formal_hw_verification/actions/workflows/Test.yml)
 
 
 The original repository is located on my own git-server at [https://git.goodcleanfun.de/tmeissner/formal_hw_verification](https://git.goodcleanfun.de/tmeissner/formal_hw_verification)
