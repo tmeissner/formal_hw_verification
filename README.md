@@ -12,7 +12,7 @@ Tests and examples of using formal verification to check correctness of digital 
 
 All stuff in the master branch uses [ghdl-yosys-plugin](https://github.com/ghdl/ghdl-yosys-plugin) and [GHDL](https://github.com/ghdl/ghdl) as VHDL front-end plugin for (Symbi)Yosys. Using GHDL as synthesis frontend allows using PSL as verification language.
 
-Some examples in the [verific branch](https://github.com/tmeissner/formal_hw_verification/tree/verific) use the commercial VHDL/SystemVerilog frontend plugin by Verific which isn't free SW and not included in the free Yosys version. See on the [Symbiotic EDA website](https://www.symbioticeda.com) for more information.
+Some examples in the [verific branch](https://github.com/tmeissner/formal_hw_verification/tree/verific) use the commercial VHDL/SystemVerilog frontend plugin by Verific which isn't free SW. It's included in the Tabby CAD Suite but not in the free Yosys version. See on the [Yosys HQ website](https://www.yosyshq.com/products-and-services) for more information.
 
 You can use the `hdlc/formal:all` docker image provided by the [hdl containers project](https://hdl.github.io/containers/) (recommended). Or you build a docker image on your own machine using my [Dockerfiles for SymbiYosys & GHDL](https://github.com/tmeissner/Dockerfiles). With both you have the latest tool versions available.
 
